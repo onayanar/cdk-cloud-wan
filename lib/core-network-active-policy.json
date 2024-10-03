@@ -1,0 +1,152 @@
+{
+    "version": "2021.12",
+    "core-network-configuration": {
+      "vpn-ecmp-support": true,
+      "asn-ranges": [
+        "64512-65534"
+      ],
+      "edge-locations": [
+        {
+          "location": "us-east-1"
+        },
+        {
+          "location": "us-east-2"
+        }
+      ]
+    },
+    "segments": [
+      {
+        "name": "nonprod",
+        "edge-locations": [
+          "us-east-1",
+          "us-east-2"
+        ],
+        "require-attachment-acceptance": false,
+        "deny-filter": [
+          "prod"
+        ]
+      },
+      {
+        "name": "prod",
+        "edge-locations": [
+          "us-east-1",
+          "us-east-2"
+        ],
+        "require-attachment-acceptance": false,
+        "deny-filter": [
+          "nonprod"
+        ]
+      },
+      {
+        "name": "sharedservices",
+        "edge-locations": [
+          "us-east-1",
+          "us-east-2"
+        ],
+        "require-attachment-acceptance": false
+      },
+      {
+        "name": "onprem",
+        "edge-locations": [
+          "us-east-1",
+          "us-east-2"
+        ],
+        "require-attachment-acceptance": false
+      }
+    ],
+    "segment-actions": [
+		{
+			"action": "share",
+			"mode": "attachment-route",
+			"segment": "sharedservices",
+			"share-with": "*"
+			},
+      {
+        "action": "create-route",
+        "destination-cidr-blocks": [
+          "0.0.0.0/0"
+        ],
+        "segment": "prod",
+        "destinations": [
+          "attachment-0910f4b85908d8b7b",
+          "attachment-008e8fd01e980dbfa"
+        ]
+      },
+      {
+        "action": "create-route",
+        "destination-cidr-blocks": [
+          "0.0.0.0/0"
+        ],
+        "segment": "nonprod",
+        "destinations": [
+          "attachment-0910f4b85908d8b7b",
+          "attachment-008e8fd01e980dbfa"
+        ]
+      }
+	],
+    "attachment-policies": [
+      {
+        "rule-number": 100,
+        "condition-logic": "and",
+        "conditions": [
+          {
+            "type": "attachment-type",
+            "operator": "equals",
+            "value": "vpc"
+          },
+          {
+            "type": "tag-value",
+            "operator": "equals",
+            "key": "env",
+            "value": "dev"
+          }
+        ],
+        "action": {
+          "association-method": "constant",
+          "segment": "nonprod"
+        }
+      },
+      {
+        "rule-number": 200,
+        "condition-logic": "and",
+        "conditions": [
+          {
+            "type": "attachment-type",
+            "operator": "equals",
+            "value": "vpc"
+          },
+          {
+            "type": "tag-value",
+            "operator": "equals",
+            "key": "env",
+            "value": "prod"
+          }
+        ],
+        "action": {
+          "association-method": "constant",
+          "segment": "prod"
+        }
+      },
+      {
+        "rule-number": 300,
+        "condition-logic": "and",
+        "conditions": [
+          {
+            "type": "attachment-type",
+            "operator": "equals",
+            "value": "vpc"
+          },
+          {
+            "type": "tag-value",
+            "operator": "equals",
+            "key": "env",
+            "value": "services"
+          }
+        ],
+        "action": {
+          "association-method": "constant",
+          "segment": "sharedservices"
+        }
+      }
+    ]
+  }
